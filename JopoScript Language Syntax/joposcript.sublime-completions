@@ -1,0 +1,21 @@
+{
+	"scope": "source.joposcript",
+	"completions":
+	[
+		"joposcript",
+
+		{ "trigger": "CONST", "contents": "CONST\t" },
+		{ "trigger": "TYPE", "contents": "TYPE\t" },
+		{ "trigger": "VAR", "contents": "VAR\t" },
+		{ "trigger": "POINTER", "contents": "POINTER TO $1;" },
+		{ "trigger": "CARDINAL", "contents": "CARDINAL;" },
+		{ "trigger": "INTEGER", "contents": "INTEGER;" },
+		{ "trigger": "REAL", "contents": "REAL;" },
+		{ "trigger": "BOOLEAN", "contents": "BOOLEAN;" },
+		{ "trigger": "CHAR", "contents": "CHAR;" },
+		{ "trigger": "STRING", "contents": "STRING;" },
+		{ "trigger": "RETURN", "contents": "RETURN $1" },
+		{ "trigger": "NEW", "contents": "NEW($1);$2" },
+		{ "trigger": "DISPOSE", "contents": "DISPOSE($1);$2" }
+	]
+}

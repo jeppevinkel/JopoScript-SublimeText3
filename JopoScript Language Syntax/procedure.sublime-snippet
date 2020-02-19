@@ -1,0 +1,11 @@
+<snippet>
+    <content><![CDATA[
+PROCEDURE $1 ($2)$3;
+BEGIN
+	$4
+END $1;
+]]></content>
+	<description>PROCEDURE</description>
+    <tabTrigger>PROCEDURE</tabTrigger>
+    <scope>source.joposcript</scope>
+</snippet>

@@ -1,0 +1,355 @@
+%YAML 1.2
+---
+# See http://www.sublimetext.com/docs/3/syntax.html
+name: JopoScript
+file_extensions:
+  - jos
+  - joposcript
+  - jopos
+scope: source.joposcript
+
+variables:
+  identifier_continue: '[[:alnum:]_]'
+  identifier: '\b[[:alpha:]_]{{identifier_continue}}*\b'
+  illegal_names: (?:MODULE|IMPLEMENTATION MODULE|DEFINITION MODULE|PROCEDURE|ABS|ADDRES|ADR|BITSET|BOOLEAN|BYTE|CAP|CARDINAL|CHAR|STRING|CHR|DEC|DISPOSE|EXCL|FALSE|FLOAT|HALT|HIGH|INC|INCL|INTEGER|LONGCARD|LONGINT|LONGREAL|LONGWORD|NEW|NULLPROC|ODD|ORD|PROC|REAL|SHORTADDR|SHORTCARD|SHORTINT|SIZE|TRUE|TRUNC|VAL|VSIZE|WORD|ABSOLUTE|ABSTRACT|ALL|AND|AND_THEN|ARRAY|AS|ASM|ATTRIBUTE|BEGIN|BINDABLE|BY|CASE|CLASS|CONST|CONSTRUCTOR|DEFINITION|DESTRUCTOR|DIV|DO|ELSE|ELSIF|END|EXCEPT|EXIT|EXPORT|EXPORTS|EXTERNAL|FAR|FILE|FINALIZATION|FINALLY|FOR|FORWARD|FROM|GOTO|IF|IMPLEMENTATION|IMPORT|IN|INHERITED|INITIALIZATION|INTERFACE|INTERRUPT|IS|LABEL|LIBRARY|LOOP|MOD|MODULE|NAME|NEAR|NIL|NOT|OBJECT|OF|ONLY|OPERATOR|OR|OR_ELSE|OTHERWISE|PACKED|PACKEDSET|POINTER|POW|PRIVATE|PROGRAM|PROPERTY|PROTECTED|PUBLIC|PUBLISHED|QUALIFIED|RECORD|REM|REPEAT|RESIDENT|RESTRICTED|RETRY|RETURN|SEGMENT|SET|SHL|SHR|THEN|TO|TRY|TYPE|UNIT|UNTIL|USES|VALUE|VAR|VIEW|VIRTUAL|WHILE|WITH|XOR)
+  path: '({{identifier}}[ ]*\.[ ]*)*{{identifier}}'
+  format_spec: |-
+    (?x:
+      (?:.? [<>=^])?     # fill align
+      [ +-]?             # sign
+      \#?                # alternate form
+      # technically, octal and hexadecimal integers are also supported as 'width', but rarely used
+      \d*                # width
+      ,?                 # thousands separator
+      (?:\.\d+)?         # precision
+      [bcdeEfFgGnosxX%]? # type
+    )
+
+contexts:
+  # The prototype context is prepended to all contexts but those setting
+  # meta_include_prototype: false.
+  prototype:
+    - include: keywords
+    - include: comments
+    - include: storage
+    - include: strings
+
+  main:
+    # The main context is the initial starting point of our syntax.
+    # Include other contexts from here (or specify them directly).
+    - include: numbers
+    - include: functions
+    - include: function-calls
+
+    - match: (\(|\)|\+|-|\*|/|:|;|\.|\^|=|:=|<|>|#)
+      scope: variable.parameter.function.joposcript
+
+  keywords:
+    # Keywords are if, else for and while.
+    # Note that blackslashes don't need to be escaped within single quoted
+    # strings in YAML. When using single quoted strings, only single quotes
+    # need to be escaped: this is done by using two single quotes next to each
+    # other.
+    - match: '\b(ABSOLUTE|ABSTRACT|ALL|AND|AND_THEN|ARRAY|AS|ASM|ATTRIBUTE|BEGIN|BINDABLE|BY|CASE|CLASS|CONST|CONSTRUCTOR|DEFINITION|DESTRUCTOR|DIV|DO|ELSE|ELSIF|EXCEPT|EXIT|EXPORT|EXPORTS|EXTERNAL|FAR|FILE|FINALIZATION|FINALLY|FOR|FORWARD|FROM|GOTO|IF|IMPLEMENTATION|IMPORT|IN|INHERITED|INITIALIZATION|INTERFACE|INTERRUPT|IS|LABEL|LIBRARY|LOOP|MOD|MODULE|NAME|NEAR|NIL|NOT|OBJECT|OF|ONLY|OPERATOR|OR|OR_ELSE|OTHERWISE|PACKED|PACKEDSET|POINTER|POW|PRIVATE|PROGRAM|PROPERTY|PROTECTED|PUBLIC|PUBLISHED|QUALIFIED|RECORD|REM|REPEAT|RESIDENT|RESTRICTED|RETRY|RETURN|SEGMENT|SET|SHL|SHR|THEN|TO|TRY|TYPE|UNIT|UNTIL|USES|VALUE|VAR|VIEW|VIRTUAL|WHILE|WITH|XOR)\b'
+      scope: keyword.control.joposcript
+
+    - match: \b(END)\b\s+(\w+(\.\w+)?)|\b(END)\b
+      captures:
+        '1': keyword.control.joposcript
+        '2': entity.name.function.end.joposcript
+        '4': keyword.control.joposcript
+
+  storage:
+    - match: '\b(ABS|ADDRES|ADR|BITSET|BOOLEAN|BYTE|CAP|CARDINAL|CHAR|STRING|CHR|DEC|DISPOSE|EXCL|FALSE|FLOAT|HALT|HIGH|INC|INCL|INTEGER|LONGCARD|LONGINT|LONGREAL|LONGWORD|NEW|NULLPROC|ODD|ORD|PROC|REAL|SHORTADDR|SHORTCARD|SHORTINT|SIZE|TRUE|TRUNC|VAL|VSIZE|WORD)\b'
+      scope: storage.type.joposcript
+      captures:
+        '1': storage.type.variable.joposcript
+        '2': variable.other.joposcript
+
+  numbers:
+    - match: '\b((0(x|X)[0-9a-fA-F]*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)(L|l|UL|ul|u|U|F|f|ll|LL|ull|ULL)?\b'
+      scope: constant.numeric.joposcript
+
+  strings:
+    # Strings begin and end with quotes, and use backslashes as an escape
+    # character.
+    - match: '"'
+      scope: punctuation.definition.string.begin.joposcript
+      push: double_quoted_string
+
+  double_quoted_string:
+    - meta_scope: string.quoted.double.joposcript
+    - match: '\\.'
+      scope: constant.character.escape.joposcript
+    - match: '"'
+      scope: punctuation.definition.string.end.joposcript
+      pop: true
+
+  comments:
+    # Comments begin with a '//' and finish at the end of the line.
+    - match: '//'
+      scope: punctuation.definition.comment.joposcript
+      push:
+        # This is an anonymous context push for brevity.
+        - meta_scope: comment.line.double-slash.joposcript
+        - match: $\n?
+          pop: true
+
+    - match: '\(\*'
+      scope: punctuation.definition.block_comment.joposcript
+      push: block_comment
+
+  block_comment:
+    - meta_scope: comment.block.joposcript
+    - match: '\*\)'
+      pop: true
+
+  functions:
+    - match: '^\s*?(PROCEDURE)\b'
+      captures:
+        1: storage.type.function.joposcript
+        2: storage.type.function.joposcript keyword.declaration.function.joposcript
+      push:
+        - meta_scope: meta.function.joposcript
+        - include: line-continuation-or-pop
+        - match: ';'
+          scope: punctuation.section.function.begin.joposcript
+          pop: true
+        - match: "(?={{identifier}})"
+          push:
+            - meta_content_scope: entity.name.function.joposcript
+            - include: entity-name-function
+            - match: ''
+              pop: true
+        - match: '(?=\()'
+          set:
+            - match: \(
+              scope: meta.function.parameters.joposcript punctuation.section.parameters.begin.joposcript
+              set: [function-parameters]
+
+  line-continuation:
+    - match: (\\)(.*)$\n?
+      captures:
+        1: punctuation.separator.continuation.line.joposcript
+        2: invalid.illegal.unexpected-text.joposcript
+    # make sure to resume parsing at next line
+      push:
+        # This prevents strings after a continuation from being a docstring
+        - include: strings
+        - match: (?=\S|^\s*$|\n)  # '\n' for when we matched a string earlier
+          pop: true
+
+  line-continuation-or-pop:
+    - include: line-continuation
+    - match: (?=\s*($|;|#))
+      pop: true
+
+  entity-name-function:
+    - include: magic-function-names
+    - include: illegal-names
+    - include: generic-names
+
+  function-parameters:
+    - meta_content_scope: meta.function.parameters.joposcript
+    - match: \)
+      scope: punctuation.section.parameters.end.joposcript
+      set: function-after-parameters
+    - match: ','
+      scope: punctuation.separator.parameters.joposcript
+    - match: /
+      scope: storage.modifier.positional-args-only.joposcript
+      push:
+        - match: (?=[,)])
+          pop: true
+        - match: \S
+          scope: invalid.illegal.expected-comma.joposcript
+    - include: function-parameters-tuple
+    - include: illegal-names
+    - match: '{{identifier}}'
+      scope: variable.parameter.joposcript
+    - include: line-continuation
+
+  function-after-parameters:
+    - meta_content_scope: meta.function.joposcript
+    - match: ';'
+      scope: meta.function.joposcript punctuation.section.function.begin.joposcript
+      pop: true
+    - match: (?=\S)
+      pop: true
+
+  function-calls:
+    - match: '(?=(\.\s*)?{{path}}\s*\()'
+      push: [function-call-wrapper, qualified-name-until-leaf]
+
+  function-call-wrapper:
+    - meta_scope: meta.function-call.joposcript
+    - match: (?=\()  # need to remove meta.function-call.joposcript from opening parens
+      set:
+        - match: \(
+          scope: punctuation.section.arguments.begin.joposcript
+          set:
+            - meta_scope: meta.function-call.arguments.joposcript
+            - match: \)
+              scope: punctuation.section.arguments.end.joposcript
+              set: after-expression
+            - include: arguments
+    - match: (\.)\s*(?={{identifier}})
+      captures:
+        1: punctuation.accessor.dot.joposcript
+      push:
+        - meta_scope: meta.qualified-name.joposcript
+        - meta_content_scope: variable.function.joposcript
+        - include: dotted-name-specials
+        - include: generic-names
+        - match: ''
+          pop: true
+    - match: (?={{identifier}})
+      push:
+        - meta_scope: meta.qualified-name.joposcript variable.function.joposcript
+        - include: name-specials
+        - include: generic-names
+        - match: ''
+          pop: true
+
+  after-expression:
+    # direct function call
+    - match: '\s*(\()'
+      captures:
+        1: punctuation.section.arguments.begin.joposcript
+      push:
+        - meta_scope: meta.function-call.arguments.joposcript
+        - match: \)
+          scope: punctuation.section.arguments.end.joposcript
+          pop: true
+        - include: arguments
+    # item access
+    - match: '\s*(\[)'
+      captures:
+        1: meta.item-access.joposcript punctuation.section.brackets.begin.joposcript
+      push:
+        - meta_content_scope: meta.item-access.arguments.joposcript
+        - match: \]
+          scope: meta.item-access.joposcript punctuation.section.brackets.end.joposcript
+          pop: true
+        - include: illegal-assignment-expression
+        - match: ':'
+          scope: punctuation.separator.slice.joposcript
+        - include: expression-in-a-group
+    # indirect function call following attribute access
+    - include: function-calls
+    # arbitrary attribute access
+    - match: '\s*(\.)'
+      captures:
+        1: punctuation.accessor.dot.joposcript
+      push:
+        - include: magic-function-names
+        - include: magic-variable-names
+        - include: illegal-names
+        - include: generic-names
+        - match: ''
+          pop: true
+    - match: ''
+      pop: true
+
+  qualified-name-until-leaf:
+    # Push this together with another context to match a qualified name
+    # until the last non-special identifier (if any).
+    # This allows the leaf to be scoped individually.
+    - meta_scope: meta.qualified-name.joposcript
+    # If a line continuation follows, this may or may not be the last leaf (most likley not though)
+    - match: (?={{identifier}}\s*(\.|\\))
+      push:
+        - include: name-specials
+        - include: generic-names
+        - match: ''
+          pop: true
+    - match: (\.)\s*(?={{identifier}}\s*(\.|\\))
+      captures:
+        1: punctuation.accessor.dot.joposcript
+      push:
+        - include: dotted-name-specials
+        - include: generic-names
+        - match: ''
+          pop: true
+    - match: \.(?!\s*{{identifier}})  # don't match last dot
+      scope: punctuation.accessor.dot.joposcript
+    - match: (?=\S|$)
+      pop: true
+
+  name-specials:
+    - include: builtin-functions
+    - include: builtin-types
+    - include: builtin-exceptions
+    - include: illegal-names
+    - include: magic-function-names
+    - include: magic-variable-names
+    - include: language-variables
+
+  dotted-name-specials:
+    - include: magic-function-names
+    - include: magic-variable-names
+    - include: illegal-names
+
+  generic-names:
+    - match: '{{identifier}}'
+      scope: meta.generic-name.joposcript
+
+  illegal-names:
+    - match: \b{{illegal_names}}\b
+      scope: invalid.illegal.name.joposcript
+
+  magic-function-names:
+    # https://docs.joposcript.org/2/reference/datamodel.html
+    # https://docs.joposcript.org/3/reference/datamodel.html
+    - match: |-
+        (?x)\b__(?:
+          # unary operators
+          invert|neg|pos|abs|
+          # binary operators
+          add|and|div|divmod|floordiv|lshift|mod|mul|or|pow|rshift|sub|truediv|xor|
+          contains|
+          # right-hand binary operators
+          radd|rand|rdiv|rdivmod|rfloordiv|rlshift|rmod|rmul|ror|rpow|rrshift|rsub|rtruediv|rxor|
+          # in-place operator assignments
+          iadd|iand|idiv|ifloordiv|ilshift|imod|imul|ior|ipow|irshift|isub|itruediv|ixor|
+          # comparisons
+          eq|ge|gt|le|lt|ne|
+          cmp|rcmp| # py2
+          # primary coercion
+          bool|str|
+          nonzero|unicode| # py2
+          # number coercion (converts something to a number)
+          bytes|complex|float|index|int|round|
+          long| # py2
+          # other "coercion"
+          format|len|length_hint|hash|repr|reversed|
+          coerce|hex|oct| # py2
+          fspath|
+          # iterator (and 'await')
+          iter|next|
+          aiter|anext|
+          await|
+          # attribute and item access
+          delattr|delitem|delslice|
+          getattr|getattribute|getitem|getslice|
+          setattr|setitem|setslice|
+          dir|missing|
+          # context manager
+          enter|exit|
+          aenter|aexit|
+          # other class magic
+          call|del|init|new|init_subclass|
+          instancecheck|subclasscheck|
+          # pickling
+          getnewargs|getnewargs_ex|getstate|setstate|reduce|reduce_ex|
+          # descriptors
+          delete|get|set|set_name|
+          # class-specific
+          subclasses|
+          # dataclasses (PEP 557)
+          post_init|
+          # for typing core support (PEP 560)
+          class_getitem|mro_entries
+        )__\b
+      comment: these methods have magic interpretation by joposcript and are generally called indirectly through syntactic constructs
+      scope: support.function.magic.joposcript
